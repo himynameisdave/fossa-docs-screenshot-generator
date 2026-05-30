@@ -833,11 +833,19 @@
     background: #f8fbf9;
     border: 0;
     border-radius: clamp(3px, 0.42vw, 8px);
-    box-shadow:
-      inset 0 0 0 1px rgba(26, 46, 37, 0.32),
-      0 clamp(10px, 2.4vw, 30px) clamp(24px, 4.8vw, 60px) rgba(14, 28, 22, 0.28);
+    box-shadow: 0 clamp(10px, 2.4vw, 30px) clamp(24px, 4.8vw, 60px) rgba(14, 28, 22, 0.28);
     overflow: hidden;
     z-index: 1;
+  }
+
+  .browser-window::after {
+    border: 1px solid rgba(26, 46, 37, 0.32);
+    border-radius: inherit;
+    content: '';
+    inset: 0;
+    pointer-events: none;
+    position: absolute;
+    z-index: 4;
   }
 
   .browser-top-bar {
