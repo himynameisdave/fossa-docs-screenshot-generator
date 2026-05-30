@@ -21,9 +21,9 @@
 
   const BROWSER_WINDOW = {
     topBarHeight: 68,
-    contentPadding: 18,
+    contentPadding: 0,
     borderWidth: 2,
-    borderRadius: 30,
+    borderRadius: 8,
     dotRadius: 9,
     dotGap: 14,
     dotX: 36,
@@ -737,7 +737,7 @@
   .browser-window {
     background: #f8fbf9;
     border: 1px solid rgba(26, 46, 37, 0.32);
-    border-radius: clamp(10px, 1.55vw, 30px);
+    border-radius: clamp(3px, 0.42vw, 8px);
     box-shadow: 0 clamp(10px, 2.4vw, 30px) clamp(24px, 4.8vw, 60px) rgba(14, 28, 22, 0.28);
     overflow: hidden;
     z-index: 1;
