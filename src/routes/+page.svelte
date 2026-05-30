@@ -49,6 +49,7 @@
   let activeObjectUrl: string | null = null;
   let browserWindowRect: Rect | null = null;
   let browserWindowEnabled = true;
+  let browserWindowScreenshotStyle = '';
   let browserWindowStyle = '';
   let errorMessage = '';
   let isExporting = false;
@@ -64,6 +65,9 @@
     ? getPlacement(screenshotImage.naturalWidth, screenshotImage.naturalHeight, browserWindowEnabled)
     : null;
   $: browserWindowRect = placement?.browserWindowRect ?? null;
+  $: browserWindowScreenshotStyle = browserWindowRect && screenshotRect
+    ? toRelativePercentStyle(screenshotRect, browserWindowRect)
+    : '';
   $: browserWindowStyle = browserWindowRect ? toBrowserWindowStyle(browserWindowRect) : '';
   $: screenshotRect = placement?.screenshotRect ?? null;
   $: screenshotStyle = screenshotRect ? toPercentStyle(screenshotRect) : '';
@@ -92,6 +96,15 @@
       `top: ${(rect.y / OUTPUT_HEIGHT) * 100}%`,
       `width: ${(rect.width / OUTPUT_WIDTH) * 100}%`,
       `height: ${(rect.height / OUTPUT_HEIGHT) * 100}%`
+    ].join('; ');
+  }
+
+  function toRelativePercentStyle(rect: Rect, parentRect: Rect) {
+    return [
+      `left: ${((rect.x - parentRect.x) / parentRect.width) * 100}%`,
+      `top: ${((rect.y - parentRect.y) / parentRect.height) * 100}%`,
+      `width: ${(rect.width / parentRect.width) * 100}%`,
+      `height: ${(rect.height / parentRect.height) * 100}%`
     ].join('; ');
   }
 
@@ -201,11 +214,10 @@
     context.closePath();
   }
 
-  function drawBrowserWindow(context: CanvasRenderingContext2D, scale: number, windowRect: Rect) {
+  function drawBrowserWindowBackground(context: CanvasRenderingContext2D, scale: number, windowRect: Rect) {
     const rect = scaleRect(windowRect, scale);
     const radius = BROWSER_WINDOW.borderRadius * scale;
     const topBarHeight = BROWSER_WINDOW.topBarHeight * scale;
-    const borderWidth = BROWSER_WINDOW.borderWidth * scale;
 
     context.save();
     context.shadowBlur = BROWSER_WINDOW.shadowBlur * scale;
@@ -223,6 +235,18 @@
     context.fillRect(rect.x, rect.y, rect.width, rect.height);
     context.fillStyle = BROWSER_WINDOW.topBarColor;
     context.fillRect(rect.x, rect.y, rect.width, topBarHeight);
+    context.restore();
+  }
+
+  function drawBrowserWindowChrome(context: CanvasRenderingContext2D, scale: number, windowRect: Rect) {
+    const rect = scaleRect(windowRect, scale);
+    const radius = BROWSER_WINDOW.borderRadius * scale;
+    const topBarHeight = BROWSER_WINDOW.topBarHeight * scale;
+    const borderWidth = BROWSER_WINDOW.borderWidth * scale;
+
+    context.save();
+    roundedRectPath(context, rect, radius);
+    context.clip();
     context.fillStyle = BROWSER_WINDOW.separatorColor;
     context.fillRect(rect.x, rect.y + topBarHeight, rect.width, Math.max(1, scale));
     context.restore();
@@ -245,6 +269,30 @@
       context.arc(dotStartX + dotStep * index, dotY, BROWSER_WINDOW.dotRadius * scale, 0, Math.PI * 2);
       context.fill();
     });
+  }
+
+  function drawScreenshotImage(
+    context: CanvasRenderingContext2D,
+    image: HTMLImageElement,
+    rect: Rect,
+    scale: number,
+    clipRect: Rect | null
+  ) {
+    context.save();
+
+    if (clipRect) {
+      roundedRectPath(context, scaleRect(clipRect, scale), BROWSER_WINDOW.borderRadius * scale);
+      context.clip();
+    }
+
+    context.drawImage(
+      image,
+      rect.x * scale,
+      rect.y * scale,
+      rect.width * scale,
+      rect.height * scale
+    );
+    context.restore();
   }
 
   function loadImage(src: string): Promise<HTMLImageElement> {
@@ -384,16 +432,18 @@
       context.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
 
       if (browserWindowEnabled && currentBrowserWindowRect) {
-        drawBrowserWindow(context, EXPORT_SCALE, currentBrowserWindowRect);
+        drawBrowserWindowBackground(context, EXPORT_SCALE, currentBrowserWindowRect);
+        drawScreenshotImage(
+          context,
+          screenshotImage,
+          currentScreenshotRect,
+          EXPORT_SCALE,
+          currentBrowserWindowRect
+        );
+        drawBrowserWindowChrome(context, EXPORT_SCALE, currentBrowserWindowRect);
+      } else {
+        drawScreenshotImage(context, screenshotImage, currentScreenshotRect, EXPORT_SCALE, null);
       }
-
-      context.drawImage(
-        screenshotImage,
-        currentScreenshotRect.x * EXPORT_SCALE,
-        currentScreenshotRect.y * EXPORT_SCALE,
-        currentScreenshotRect.width * EXPORT_SCALE,
-        currentScreenshotRect.height * EXPORT_SCALE
-      );
 
       const blob = await canvasToBlob(canvas);
       const downloadUrl = URL.createObjectURL(blob);
@@ -491,21 +541,27 @@
 
         {#if screenshotUrl && screenshotRect}
           {#if browserWindowEnabled && browserWindowRect}
-            <div class="browser-window" style={browserWindowStyle} aria-hidden="true">
+            <div class="browser-window" style={browserWindowStyle}>
               <div class="browser-top-bar">
                 <span class="browser-dot red"></span>
                 <span class="browser-dot yellow"></span>
                 <span class="browser-dot green"></span>
               </div>
+              <img
+                class="screenshot"
+                src={screenshotUrl}
+                alt="Selected product screenshot preview"
+                style={browserWindowScreenshotStyle}
+              />
             </div>
+          {:else}
+            <img
+              class="screenshot"
+              src={screenshotUrl}
+              alt="Selected product screenshot preview"
+              style={screenshotStyle}
+            />
           {/if}
-
-          <img
-            class="screenshot"
-            src={screenshotUrl}
-            alt="Selected product screenshot preview"
-            style={screenshotStyle}
-          />
         {:else}
           <div class="empty-state">
             <strong>No screenshot yet</strong>
@@ -775,9 +831,11 @@
 
   .browser-window {
     background: #f8fbf9;
-    border: 1px solid rgba(26, 46, 37, 0.32);
+    border: 0;
     border-radius: clamp(3px, 0.42vw, 8px);
-    box-shadow: 0 clamp(10px, 2.4vw, 30px) clamp(24px, 4.8vw, 60px) rgba(14, 28, 22, 0.28);
+    box-shadow:
+      inset 0 0 0 1px rgba(26, 46, 37, 0.32),
+      0 clamp(10px, 2.4vw, 30px) clamp(24px, 4.8vw, 60px) rgba(14, 28, 22, 0.28);
     overflow: hidden;
     z-index: 1;
   }
@@ -790,6 +848,8 @@
     gap: var(--dot-gap);
     height: var(--top-bar-height);
     padding-left: var(--dot-left);
+    position: relative;
+    z-index: 3;
   }
 
   .browser-dot {
