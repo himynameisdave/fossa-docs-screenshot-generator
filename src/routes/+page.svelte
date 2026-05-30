@@ -8,6 +8,11 @@
     height: number;
   };
 
+  type Placement = {
+    browserWindowRect: Rect | null;
+    screenshotRect: Rect;
+  };
+
   const OUTPUT_WIDTH = 1920;
   const OUTPUT_HEIGHT = 1080;
   const EXPORT_SCALE = 2;
@@ -42,25 +47,25 @@
   const BACKGROUND_DATA_URL = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(BACKGROUND_SVG)}`;
 
   let activeObjectUrl: string | null = null;
+  let browserWindowRect: Rect | null = null;
   let browserWindowEnabled = true;
   let browserWindowStyle = '';
   let errorMessage = '';
   let isExporting = false;
   let isLoading = false;
+  let placement: Placement | null = null;
   let screenshotImage: HTMLImageElement | null = null;
   let screenshotRect: Rect | null = null;
   let screenshotStyle = '';
   let screenshotUrl: string | null = null;
   let statusMessage = 'Paste an image anywhere on this page, or upload one below.';
 
-  $: browserWindowStyle = browserWindowEnabled ? toBrowserWindowStyle(SCREENSHOT_SAFE_AREA) : '';
-  $: screenshotRect = screenshotImage
-    ? getScreenshotRect(
-        screenshotImage.naturalWidth,
-        screenshotImage.naturalHeight,
-        browserWindowEnabled
-      )
+  $: placement = screenshotImage
+    ? getPlacement(screenshotImage.naturalWidth, screenshotImage.naturalHeight, browserWindowEnabled)
     : null;
+  $: browserWindowRect = placement?.browserWindowRect ?? null;
+  $: browserWindowStyle = browserWindowRect ? toBrowserWindowStyle(browserWindowRect) : '';
+  $: screenshotRect = placement?.screenshotRect ?? null;
   $: screenshotStyle = screenshotRect ? toPercentStyle(screenshotRect) : '';
 
   onMount(() => {
@@ -107,23 +112,56 @@
     };
   }
 
-  function getBrowserContentRect(windowRect: Rect): Rect {
+  function getBrowserInsets() {
     const horizontalInset = BROWSER_WINDOW.contentPadding + BROWSER_WINDOW.borderWidth;
     const topInset = BROWSER_WINDOW.topBarHeight + BROWSER_WINDOW.contentPadding;
     const bottomInset = BROWSER_WINDOW.contentPadding + BROWSER_WINDOW.borderWidth;
 
+    return { bottomInset, horizontalInset, topInset };
+  }
+
+  function getBrowserWindowPlacement(sourceWidth: number, sourceHeight: number): Placement {
+    const { bottomInset, horizontalInset, topInset } = getBrowserInsets();
+    const maxContentBounds = {
+      x: 0,
+      y: 0,
+      width: SCREENSHOT_SAFE_AREA.width - horizontalInset * 2,
+      height: SCREENSHOT_SAFE_AREA.height - topInset - bottomInset
+    } satisfies Rect;
+    const contentRect = getFitRect(sourceWidth, sourceHeight, maxContentBounds);
+    const windowWidth = contentRect.width + horizontalInset * 2;
+    const windowHeight = contentRect.height + topInset + bottomInset;
+    const browserRect = {
+      x: SCREENSHOT_SAFE_AREA.x + (SCREENSHOT_SAFE_AREA.width - windowWidth) / 2,
+      y: SCREENSHOT_SAFE_AREA.y + (SCREENSHOT_SAFE_AREA.height - windowHeight) / 2,
+      width: windowWidth,
+      height: windowHeight
+    } satisfies Rect;
+
     return {
-      x: windowRect.x + horizontalInset,
-      y: windowRect.y + topInset,
-      width: windowRect.width - horizontalInset * 2,
-      height: windowRect.height - topInset - bottomInset
+      browserWindowRect: browserRect,
+      screenshotRect: {
+        x: browserRect.x + horizontalInset,
+        y: browserRect.y + topInset,
+        width: contentRect.width,
+        height: contentRect.height
+      }
     };
   }
 
-  function getScreenshotRect(sourceWidth: number, sourceHeight: number, useBrowserWindow: boolean) {
-    const bounds = useBrowserWindow ? getBrowserContentRect(SCREENSHOT_SAFE_AREA) : SCREENSHOT_SAFE_AREA;
+  function getPlacement(
+    sourceWidth: number,
+    sourceHeight: number,
+    useBrowserWindow: boolean
+  ): Placement {
+    if (useBrowserWindow) {
+      return getBrowserWindowPlacement(sourceWidth, sourceHeight);
+    }
 
-    return getFitRect(sourceWidth, sourceHeight, bounds);
+    return {
+      browserWindowRect: null,
+      screenshotRect: getFitRect(sourceWidth, sourceHeight, SCREENSHOT_SAFE_AREA)
+    };
   }
 
   function toBrowserWindowStyle(rect: Rect) {
@@ -163,8 +201,8 @@
     context.closePath();
   }
 
-  function drawBrowserWindow(context: CanvasRenderingContext2D, scale: number) {
-    const rect = scaleRect(SCREENSHOT_SAFE_AREA, scale);
+  function drawBrowserWindow(context: CanvasRenderingContext2D, scale: number, windowRect: Rect) {
+    const rect = scaleRect(windowRect, scale);
     const radius = BROWSER_WINDOW.borderRadius * scale;
     const topBarHeight = BROWSER_WINDOW.topBarHeight * scale;
     const borderWidth = BROWSER_WINDOW.borderWidth * scale;
@@ -256,7 +294,7 @@
 
     try {
       const loadedImage = await loadImage(objectUrl);
-      getScreenshotRect(loadedImage.naturalWidth, loadedImage.naturalHeight, browserWindowEnabled);
+      getPlacement(loadedImage.naturalWidth, loadedImage.naturalHeight, browserWindowEnabled);
 
       if (activeObjectUrl) {
         URL.revokeObjectURL(activeObjectUrl);
@@ -316,6 +354,7 @@
   }
 
   async function downloadPng() {
+    const currentBrowserWindowRect = browserWindowRect;
     const currentScreenshotRect = screenshotRect;
 
     if (!screenshotImage || !currentScreenshotRect) {
@@ -344,8 +383,8 @@
       context.imageSmoothingQuality = 'high';
       context.drawImage(backgroundImage, 0, 0, canvas.width, canvas.height);
 
-      if (browserWindowEnabled) {
-        drawBrowserWindow(context, EXPORT_SCALE);
+      if (browserWindowEnabled && currentBrowserWindowRect) {
+        drawBrowserWindow(context, EXPORT_SCALE, currentBrowserWindowRect);
       }
 
       context.drawImage(
@@ -451,7 +490,7 @@
         <img class="background" src={BACKGROUND_DATA_URL} alt="" />
 
         {#if screenshotUrl && screenshotRect}
-          {#if browserWindowEnabled}
+          {#if browserWindowEnabled && browserWindowRect}
             <div class="browser-window" style={browserWindowStyle} aria-hidden="true">
               <div class="browser-top-bar">
                 <span class="browser-dot red"></span>
