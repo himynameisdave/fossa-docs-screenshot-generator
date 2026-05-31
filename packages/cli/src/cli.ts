@@ -3,7 +3,7 @@ import { constants } from 'node:fs';
 import { access, stat } from 'node:fs/promises';
 import { basename, dirname, extname, isAbsolute, join, parse, relative, resolve } from 'node:path';
 
-import { EXPORT_SCALE } from '../../../src/lib/screenshot-composition';
+import { EXPORT_SCALE, SCREENSHOT_SIZE } from '../../../src/lib/screenshot-composition';
 import { renderScreenshotPng } from './render';
 
 type CliOptions = {
@@ -13,6 +13,7 @@ type CliOptions = {
   inputs: string[];
   outputPath: string | null;
   scale: number;
+  screenshotSize: number;
 };
 
 class CliError extends Error {}
@@ -24,6 +25,8 @@ Options:
   -o, --output <path>       Write a single input to a specific output path.
   -f, --force               Overwrite existing output files.
   --scale <number>          Export scale multiplier. Default: ${EXPORT_SCALE}.
+  --screenshot-size <percent>
+                            Screenshot placement size. Default: ${SCREENSHOT_SIZE.defaultPercent}.
   --no-browser-window       Export without the macOS-style browser frame.
   -h, --help                Show this help message.
 `;
@@ -56,7 +59,8 @@ async function main() {
         inputPath,
         outputPath,
         scale: options.scale,
-        browserWindow: options.browserWindow
+        browserWindow: options.browserWindow,
+        screenshotSize: options.screenshotSize
       });
 
       console.log(
@@ -77,7 +81,8 @@ function parseArgs(args: string[]): CliOptions {
     help: false,
     inputs: [],
     outputPath: null,
-    scale: EXPORT_SCALE
+    scale: EXPORT_SCALE,
+    screenshotSize: SCREENSHOT_SIZE.defaultPercent / 100
   };
 
   for (let index = 0; index < args.length; index += 1) {
@@ -120,6 +125,12 @@ function parseArgs(args: string[]): CliOptions {
       continue;
     }
 
+    if (arg === '--screenshot-size') {
+      index += 1;
+      options.screenshotSize = parseScreenshotSize(readOptionValue(args, index, arg));
+      continue;
+    }
+
     if (arg.startsWith('-')) {
       throw new CliError(`Unknown option: ${arg}`);
     }
@@ -148,6 +159,22 @@ function parseScale(value: string) {
   }
 
   return scale;
+}
+
+function parseScreenshotSize(value: string) {
+  const size = Number(value);
+
+  if (
+    !Number.isFinite(size) ||
+    size < SCREENSHOT_SIZE.minPercent ||
+    size > SCREENSHOT_SIZE.maxPercent
+  ) {
+    throw new CliError(
+      `--screenshot-size must be a percentage between ${SCREENSHOT_SIZE.minPercent} and ${SCREENSHOT_SIZE.maxPercent}.`
+    );
+  }
+
+  return size / 100;
 }
 
 function resolveOutputPath(inputPath: string, explicitOutputPath: string | null) {

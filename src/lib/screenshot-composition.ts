@@ -14,6 +14,13 @@ export const OUTPUT_WIDTH = 1920;
 export const OUTPUT_HEIGHT = 1080;
 export const EXPORT_SCALE = 2;
 
+export const SCREENSHOT_SIZE = {
+  defaultPercent: 100,
+  minPercent: 50,
+  maxPercent: 130,
+  stepPercent: 5
+};
+
 export const SCREENSHOT_SAFE_AREA = {
   x: 240,
   y: 170,
@@ -166,6 +173,10 @@ export function getFitRect(sourceWidth: number, sourceHeight: number, bounds: Re
     throw new Error('Image has no usable dimensions.');
   }
 
+  if (bounds.width <= 0 || bounds.height <= 0) {
+    throw new Error('Screenshot size leaves no usable placement area.');
+  }
+
   const scale = Math.min(bounds.width / sourceWidth, bounds.height / sourceHeight);
   const width = sourceWidth * scale;
   const height = sourceHeight * scale;
@@ -181,15 +192,22 @@ export function getFitRect(sourceWidth: number, sourceHeight: number, bounds: Re
 export function getPlacement(
   sourceWidth: number,
   sourceHeight: number,
-  useBrowserWindow: boolean
+  useBrowserWindow: boolean,
+  screenshotSize = 1
 ): Placement {
+  if (!Number.isFinite(screenshotSize) || screenshotSize <= 0) {
+    throw new Error('Screenshot size must be a positive number.');
+  }
+
+  const placementBounds = scaleRectFromCenter(SCREENSHOT_SAFE_AREA, screenshotSize);
+
   if (useBrowserWindow) {
-    return getBrowserWindowPlacement(sourceWidth, sourceHeight);
+    return getBrowserWindowPlacement(sourceWidth, sourceHeight, placementBounds);
   }
 
   return {
     browserWindowRect: null,
-    screenshotRect: getFitRect(sourceWidth, sourceHeight, SCREENSHOT_SAFE_AREA)
+    screenshotRect: getFitRect(sourceWidth, sourceHeight, placementBounds)
   };
 }
 
@@ -210,20 +228,32 @@ function getBrowserInsets() {
   return { bottomInset, horizontalInset, topInset };
 }
 
-function getBrowserWindowPlacement(sourceWidth: number, sourceHeight: number): Placement {
+function scaleRectFromCenter(rect: Rect, scale: number): Rect {
+  const width = rect.width * scale;
+  const height = rect.height * scale;
+
+  return {
+    x: rect.x + (rect.width - width) / 2,
+    y: rect.y + (rect.height - height) / 2,
+    width,
+    height
+  };
+}
+
+function getBrowserWindowPlacement(sourceWidth: number, sourceHeight: number, bounds: Rect): Placement {
   const { bottomInset, horizontalInset, topInset } = getBrowserInsets();
   const maxContentBounds = {
     x: 0,
     y: 0,
-    width: SCREENSHOT_SAFE_AREA.width - horizontalInset * 2,
-    height: SCREENSHOT_SAFE_AREA.height - topInset - bottomInset
+    width: bounds.width - horizontalInset * 2,
+    height: bounds.height - topInset - bottomInset
   } satisfies Rect;
   const contentRect = getFitRect(sourceWidth, sourceHeight, maxContentBounds);
   const windowWidth = contentRect.width + horizontalInset * 2;
   const windowHeight = contentRect.height + topInset + bottomInset;
   const browserRect = {
-    x: SCREENSHOT_SAFE_AREA.x + (SCREENSHOT_SAFE_AREA.width - windowWidth) / 2,
-    y: SCREENSHOT_SAFE_AREA.y + (SCREENSHOT_SAFE_AREA.height - windowHeight) / 2,
+    x: bounds.x + (bounds.width - windowWidth) / 2,
+    y: bounds.y + (bounds.height - windowHeight) / 2,
     width: windowWidth,
     height: windowHeight
   } satisfies Rect;

@@ -31,6 +31,7 @@ export type RenderScreenshotOptions = {
   outputPath: string;
   scale?: number;
   browserWindow?: boolean;
+  screenshotSize?: number;
 };
 
 export type RenderScreenshotResult = {
@@ -63,7 +64,7 @@ export async function renderScreenshotPng(
 
   const outputWidth = Math.max(1, Math.round(OUTPUT_WIDTH * scale));
   const outputHeight = Math.max(1, Math.round(OUTPUT_HEIGHT * scale));
-  const placement = getPlacement(inputWidth, inputHeight, browserWindow);
+  const placement = getPlacement(inputWidth, inputHeight, browserWindow, options.screenshotSize);
   const screenshotRect = toPixelRect(placement.screenshotRect, scale);
   const composites: sharp.OverlayOptions[] = [];
 

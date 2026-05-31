@@ -5,6 +5,7 @@
     EXPORT_SCALE,
     OUTPUT_HEIGHT,
     OUTPUT_WIDTH,
+    SCREENSHOT_SIZE,
     SCREENSHOT_SAFE_AREA,
     getPlacement,
     scaleRect,
@@ -24,12 +25,20 @@
   let placement: Placement | null = null;
   let screenshotImage: HTMLImageElement | null = null;
   let screenshotRect: Rect | null = null;
+  let screenshotSize = SCREENSHOT_SIZE.defaultPercent / 100;
+  let screenshotSizePercent = SCREENSHOT_SIZE.defaultPercent;
   let screenshotStyle = '';
   let screenshotUrl: string | null = null;
   let statusMessage = 'Paste an image anywhere on this page, or upload one below.';
 
+  $: screenshotSize = screenshotSizePercent / 100;
   $: placement = screenshotImage
-    ? getPlacement(screenshotImage.naturalWidth, screenshotImage.naturalHeight, browserWindowEnabled)
+    ? getPlacement(
+        screenshotImage.naturalWidth,
+        screenshotImage.naturalHeight,
+        browserWindowEnabled,
+        screenshotSize
+      )
     : null;
   $: browserWindowRect = placement?.browserWindowRect ?? null;
   $: browserWindowScreenshotStyle = browserWindowRect && screenshotRect
@@ -231,7 +240,7 @@
 
     try {
       const loadedImage = await loadImage(objectUrl);
-      getPlacement(loadedImage.naturalWidth, loadedImage.naturalHeight, browserWindowEnabled);
+      getPlacement(loadedImage.naturalWidth, loadedImage.naturalHeight, browserWindowEnabled, screenshotSize);
 
       if (activeObjectUrl) {
         URL.revokeObjectURL(activeObjectUrl);
@@ -395,6 +404,23 @@
         </span>
       </label>
 
+      <label class="slider-row">
+        <span class="slider-label">
+          <span>
+            <strong>Screenshot size</strong>
+            <small>Adjust how much of the background the screenshot fills.</small>
+          </span>
+          <strong class="slider-value">{screenshotSizePercent}%</strong>
+        </span>
+        <input
+          bind:value={screenshotSizePercent}
+          max={SCREENSHOT_SIZE.maxPercent}
+          min={SCREENSHOT_SIZE.minPercent}
+          step={SCREENSHOT_SIZE.stepPercent}
+          type="range"
+        />
+      </label>
+
       <button
         class="download-button"
         disabled={!screenshotImage || isLoading || isExporting}
@@ -410,6 +436,7 @@
         <p>
           <strong>Safe area:</strong> {SCREENSHOT_SAFE_AREA.width} x {SCREENSHOT_SAFE_AREA.height}px
         </p>
+        <p><strong>Screenshot size:</strong> {screenshotSizePercent}%</p>
         <p><strong>Window:</strong> {browserWindowEnabled ? 'On' : 'Off'}</p>
       </div>
 
@@ -621,22 +648,51 @@
     padding: 13px 14px;
   }
 
+  .slider-row {
+    background: rgba(234, 244, 240, 0.72);
+    border: 1px solid rgba(36, 59, 48, 0.12);
+    border-radius: 16px;
+    display: grid;
+    gap: 12px;
+    padding: 13px 14px;
+  }
+
+  .slider-label {
+    align-items: start;
+    display: flex;
+    gap: 12px;
+    justify-content: space-between;
+  }
+
   .toggle-row input {
     accent-color: #4a7a63;
     height: 20px;
     width: 20px;
   }
 
-  .toggle-row span {
+  .slider-row input {
+    accent-color: #4a7a63;
+    width: 100%;
+  }
+
+  .toggle-row span,
+  .slider-label span {
     display: grid;
     gap: 2px;
   }
 
-  .toggle-row strong {
+  .toggle-row strong,
+  .slider-row strong {
     color: #14241c;
   }
 
-  .toggle-row small {
+  .slider-value {
+    color: #4a7a63;
+    white-space: nowrap;
+  }
+
+  .toggle-row small,
+  .slider-row small {
     color: #5b7467;
     line-height: 1.35;
   }

@@ -55,6 +55,7 @@ Common options:
 - `--output <path>` writes a single input to a specific output path.
 - `--force` overwrites an existing output file.
 - `--scale <number>` changes the export multiplier. The default is `2`.
+- `--screenshot-size <percent>` changes how large the screenshot appears in the background. The default is `100`.
 - `--no-browser-window` exports without the browser frame.
 - Multiple input files can be passed at once. Each output is written next to its source image.
 
@@ -64,6 +65,7 @@ Examples:
 bun run --cwd packages/cli dev -- ./screenshots/settings.png
 bun run --cwd packages/cli dev -- ./screenshots/*.png
 bun run --cwd packages/cli dev -- --output ./docs/settings.png ./screenshots/settings.png
+bun run --cwd packages/cli dev -- --screenshot-size 80 ./screenshots/settings.png
 bun run --cwd packages/cli dev -- --no-browser-window --scale 1 ./screenshots/settings.png
 ```
 
@@ -98,4 +100,5 @@ The composition constants live in `src/lib/screenshot-composition.ts` and are sh
 
 - `OUTPUT_WIDTH` and `OUTPUT_HEIGHT` set the base image size.
 - `EXPORT_SCALE` controls the high-resolution PNG multiplier.
+- `SCREENSHOT_SIZE` controls the default, min, max, and step values for screenshot placement size.
 - `SCREENSHOT_SAFE_AREA` controls where screenshots are centered and scaled.
