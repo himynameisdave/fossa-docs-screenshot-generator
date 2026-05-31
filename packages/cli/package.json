@@ -1,0 +1,25 @@
+{
+  "name": "@fossa/docs-screenshot-generator",
+  "version": "0.1.0",
+  "description": "Generate FOSSA docs-ready screenshots from source images.",
+  "type": "module",
+  "bin": {
+    "fossa-docs-screenshot": "./dist/cli.js"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "bun build src/cli.ts --target=node --outfile=dist/cli.js --packages=external",
+    "check": "tsc -p tsconfig.json --noEmit",
+    "dev": "bun src/cli.ts",
+    "prepack": "bun run build"
+  },
+  "dependencies": {
+    "sharp": "^0.34.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

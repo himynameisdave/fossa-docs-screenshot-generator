@@ -3,11 +3,16 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "dev": "vite dev",
     "build": "vite build",
+    "build:cli": "bun run --cwd packages/cli build",
+    "package:cli": "bun run build:cli && npm pack ./packages/cli",
     "preview": "vite preview",
-    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json"
+    "check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && bun run --cwd packages/cli check"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.8",
