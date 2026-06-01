@@ -34,6 +34,7 @@ fossa-docs-screenshot [options] <image...>
 - `-f, --force` overwrites existing output files.
 - `--scale <number>` changes the export multiplier. The default is `2`.
 - `--screenshot-size <percent>` changes how large the screenshot appears in the background. The default is `100`.
+- `--window-padding <pixels>` adds padding inside the macOS-style browser frame. The default is `0`.
 - `--no-browser-window` exports without the macOS-style browser frame.
 - `-h, --help` prints help.
 
@@ -44,6 +45,7 @@ fossa-docs-screenshot ./screenshots/settings.png
 fossa-docs-screenshot --output ./docs/settings.png ./screenshots/settings.png
 fossa-docs-screenshot --force ./screenshots/settings.png
 fossa-docs-screenshot --screenshot-size 80 ./screenshots/settings.png
+fossa-docs-screenshot --window-padding 32 ./screenshots/settings.png
 fossa-docs-screenshot --no-browser-window --scale 1 ./screenshots/settings.png
 ```
 

@@ -1,0 +1,75 @@
+name: CLI Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+
+jobs:
+  package-cli:
+    name: Package CLI
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.13
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Verify release version
+        run: |
+          tag_version="${GITHUB_REF_NAME#v}"
+          package_version="$(node -p "require('./packages/cli/package.json').version")"
+          root_version="$(node -p "require('./package.json').version")"
+
+          if [ "$tag_version" != "$package_version" ]; then
+            echo "Tag version v$tag_version does not match CLI package version $package_version."
+            exit 1
+          fi
+
+          if [ "$tag_version" != "$root_version" ]; then
+            echo "Tag version v$tag_version does not match root package version $root_version."
+            exit 1
+          fi
+
+      - name: Run checks
+        run: bun run check
+
+      - name: Pack CLI tarball
+        id: pack
+        run: |
+          mkdir -p artifacts
+          tarball_name="$(npm pack ./packages/cli --pack-destination ./artifacts --silent)"
+          tarball_path="artifacts/$tarball_name"
+
+          if [ ! -f "$tarball_path" ]; then
+            echo "Expected tarball was not created: $tarball_path"
+            exit 1
+          fi
+
+          echo "tarball_path=$tarball_path" >> "$GITHUB_OUTPUT"
+
+      - name: Smoke-test packaged CLI
+        run: |
+          npm install -g "${{ steps.pack.outputs.tarball_path }}"
+          fossa-docs-screenshot --help
+
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.pack.outputs.tarball_path }}
+          generate_release_notes: true
