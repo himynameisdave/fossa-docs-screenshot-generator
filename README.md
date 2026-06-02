@@ -84,7 +84,7 @@ npm install -g ./fossa-docs-screenshot-generator-0.2.0.tgz
 fossa-docs-screenshot ./path/to/screenshot.png
 ```
 
-If the package is published to a registry later, install it with `npm install -g @fossa/docs-screenshot-generator` instead.
+The package is published to npm, so you can also install it directly with `npm install -g fossa-docs-screenshot-generator`.
 
 ## CLI releases
 
@@ -96,7 +96,7 @@ To cut a CLI release:
 2. Commit the version change.
 3. Create and push a matching tag, for example `git tag v0.1.1 && git push origin v0.1.1`.
 
-The workflow verifies the tag matches both package versions, runs checks, packages `packages/cli` with `npm pack`, smoke-tests the globally installed binary, and attaches the versioned `.tgz` tarball to the GitHub release.
+The workflow verifies the tag matches both package versions, runs checks, packages `packages/cli` with `npm pack`, smoke-tests the globally installed binary, publishes the package to npm via OIDC trusted publishing, and attaches the versioned `.tgz` tarball to the GitHub release.
 
 ## Deployment
 
