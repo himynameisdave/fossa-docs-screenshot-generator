@@ -1,7 +1,24 @@
 {
-  "name": "@fossa/docs-screenshot-generator",
-  "version": "0.2.0",
+  "name": "fossa-docs-screenshot-generator",
+  "version": "0.2.1",
   "description": "Generate FOSSA docs-ready screenshots from source images.",
+  "license": "MIT",
+  "keywords": [
+    "screenshot",
+    "cli",
+    "fossa",
+    "docs",
+    "image"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/himynameisdave/fossa-docs-screenshot-generator.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/himynameisdave/fossa-docs-screenshot-generator#readme",
+  "bugs": {
+    "url": "https://github.com/himynameisdave/fossa-docs-screenshot-generator/issues"
+  },
   "type": "module",
   "bin": {
     "fossa-docs-screenshot": "./dist/cli.js"

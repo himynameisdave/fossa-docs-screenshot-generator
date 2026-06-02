@@ -1,4 +1,4 @@
-# @fossa/docs-screenshot-generator
+# fossa-docs-screenshot-generator
 
 Generate FOSSA docs-ready PNG screenshots from local image files.
 
@@ -80,8 +80,8 @@ npm install -g ./fossa-docs-screenshot-generator-0.2.0.tgz
 fossa-docs-screenshot ./screenshot.png
 ```
 
-If this package is published to a registry later, install it with:
+The package is published to npm, so you can also install it directly:
 
 ```sh
-npm install -g @fossa/docs-screenshot-generator
+npm install -g fossa-docs-screenshot-generator
 ```
