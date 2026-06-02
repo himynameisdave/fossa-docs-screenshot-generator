@@ -21,6 +21,13 @@ export const SCREENSHOT_SIZE = {
   stepPercent: 5
 };
 
+export const BROWSER_WINDOW_PADDING = {
+  defaultPixels: 0,
+  minPixels: 0,
+  maxPixels: 144,
+  stepPixels: 4
+};
+
 export const SCREENSHOT_SAFE_AREA = {
   x: 240,
   y: 170,
@@ -30,7 +37,6 @@ export const SCREENSHOT_SAFE_AREA = {
 
 export const BROWSER_WINDOW = {
   topBarHeight: 68,
-  contentPadding: 0,
   borderWidth: 2,
   borderRadius: 8,
   dotRadius: 9,
@@ -193,16 +199,21 @@ export function getPlacement(
   sourceWidth: number,
   sourceHeight: number,
   useBrowserWindow: boolean,
-  screenshotSize = 1
+  screenshotSize = 1,
+  browserWindowPadding = BROWSER_WINDOW_PADDING.defaultPixels
 ): Placement {
   if (!Number.isFinite(screenshotSize) || screenshotSize <= 0) {
     throw new Error('Screenshot size must be a positive number.');
   }
 
+  if (!Number.isFinite(browserWindowPadding) || browserWindowPadding < 0) {
+    throw new Error('Browser window padding must be a non-negative number.');
+  }
+
   const placementBounds = scaleRectFromCenter(SCREENSHOT_SAFE_AREA, screenshotSize);
 
   if (useBrowserWindow) {
-    return getBrowserWindowPlacement(sourceWidth, sourceHeight, placementBounds);
+    return getBrowserWindowPlacement(sourceWidth, sourceHeight, placementBounds, browserWindowPadding);
   }
 
   return {
@@ -220,10 +231,10 @@ export function scaleRect(rect: Rect, scale: number): Rect {
   };
 }
 
-function getBrowserInsets() {
-  const horizontalInset = BROWSER_WINDOW.contentPadding + BROWSER_WINDOW.borderWidth;
-  const topInset = BROWSER_WINDOW.topBarHeight + BROWSER_WINDOW.contentPadding;
-  const bottomInset = BROWSER_WINDOW.contentPadding + BROWSER_WINDOW.borderWidth;
+function getBrowserInsets(browserWindowPadding: number) {
+  const horizontalInset = browserWindowPadding + BROWSER_WINDOW.borderWidth;
+  const topInset = BROWSER_WINDOW.topBarHeight + browserWindowPadding;
+  const bottomInset = browserWindowPadding + BROWSER_WINDOW.borderWidth;
 
   return { bottomInset, horizontalInset, topInset };
 }
@@ -240,8 +251,13 @@ function scaleRectFromCenter(rect: Rect, scale: number): Rect {
   };
 }
 
-function getBrowserWindowPlacement(sourceWidth: number, sourceHeight: number, bounds: Rect): Placement {
-  const { bottomInset, horizontalInset, topInset } = getBrowserInsets();
+function getBrowserWindowPlacement(
+  sourceWidth: number,
+  sourceHeight: number,
+  bounds: Rect,
+  browserWindowPadding: number
+): Placement {
+  const { bottomInset, horizontalInset, topInset } = getBrowserInsets(browserWindowPadding);
   const maxContentBounds = {
     x: 0,
     y: 0,

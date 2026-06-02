@@ -2,6 +2,7 @@
   import {
     BACKGROUND_DATA_URL,
     BROWSER_WINDOW,
+    BROWSER_WINDOW_PADDING,
     EXPORT_SCALE,
     OUTPUT_HEIGHT,
     OUTPUT_WIDTH,
@@ -15,6 +16,7 @@
   import { onDestroy, onMount } from 'svelte';
 
   let activeObjectUrl: string | null = null;
+  let browserWindowPadding = BROWSER_WINDOW_PADDING.defaultPixels;
   let browserWindowRect: Rect | null = null;
   let browserWindowEnabled = true;
   let browserWindowScreenshotStyle = '';
@@ -37,7 +39,8 @@
         screenshotImage.naturalWidth,
         screenshotImage.naturalHeight,
         browserWindowEnabled,
-        screenshotSize
+        screenshotSize,
+        browserWindowPadding
       )
     : null;
   $: browserWindowRect = placement?.browserWindowRect ?? null;
@@ -240,7 +243,13 @@
 
     try {
       const loadedImage = await loadImage(objectUrl);
-      getPlacement(loadedImage.naturalWidth, loadedImage.naturalHeight, browserWindowEnabled, screenshotSize);
+      getPlacement(
+        loadedImage.naturalWidth,
+        loadedImage.naturalHeight,
+        browserWindowEnabled,
+        screenshotSize,
+        browserWindowPadding
+      );
 
       if (activeObjectUrl) {
         URL.revokeObjectURL(activeObjectUrl);
@@ -421,6 +430,24 @@
         />
       </label>
 
+      <label class="slider-row" class:disabled-row={!browserWindowEnabled}>
+        <span class="slider-label">
+          <span>
+            <strong>Window padding</strong>
+            <small>Add space between the frame and screenshot.</small>
+          </span>
+          <strong class="slider-value">{browserWindowPadding}px</strong>
+        </span>
+        <input
+          bind:value={browserWindowPadding}
+          disabled={!browserWindowEnabled}
+          max={BROWSER_WINDOW_PADDING.maxPixels}
+          min={BROWSER_WINDOW_PADDING.minPixels}
+          step={BROWSER_WINDOW_PADDING.stepPixels}
+          type="range"
+        />
+      </label>
+
       <button
         class="download-button"
         disabled={!screenshotImage || isLoading || isExporting}
@@ -437,6 +464,7 @@
           <strong>Safe area:</strong> {SCREENSHOT_SAFE_AREA.width} x {SCREENSHOT_SAFE_AREA.height}px
         </p>
         <p><strong>Screenshot size:</strong> {screenshotSizePercent}%</p>
+        <p><strong>Window padding:</strong> {browserWindowEnabled ? `${browserWindowPadding}px` : 'Off'}</p>
         <p><strong>Window:</strong> {browserWindowEnabled ? 'On' : 'Off'}</p>
       </div>
 
@@ -657,6 +685,10 @@
     padding: 13px 14px;
   }
 
+  .disabled-row {
+    opacity: 0.55;
+  }
+
   .slider-label {
     align-items: start;
     display: flex;
@@ -673,6 +705,10 @@
   .slider-row input {
     accent-color: #4a7a63;
     width: 100%;
+  }
+
+  .disabled-row input {
+    cursor: not-allowed;
   }
 
   .toggle-row span,

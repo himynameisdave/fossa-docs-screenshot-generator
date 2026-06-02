@@ -3,11 +3,16 @@ import { constants } from 'node:fs';
 import { access, stat } from 'node:fs/promises';
 import { basename, dirname, extname, isAbsolute, join, parse, relative, resolve } from 'node:path';
 
-import { EXPORT_SCALE, SCREENSHOT_SIZE } from '../../../src/lib/screenshot-composition';
+import {
+  BROWSER_WINDOW_PADDING,
+  EXPORT_SCALE,
+  SCREENSHOT_SIZE
+} from '../../../src/lib/screenshot-composition';
 import { renderScreenshotPng } from './render';
 
 type CliOptions = {
   browserWindow: boolean;
+  browserWindowPadding: number;
   force: boolean;
   help: boolean;
   inputs: string[];
@@ -27,6 +32,7 @@ Options:
   --scale <number>          Export scale multiplier. Default: ${EXPORT_SCALE}.
   --screenshot-size <percent>
                             Screenshot placement size. Default: ${SCREENSHOT_SIZE.defaultPercent}.
+  --window-padding <pixels> Padding inside the macOS-style frame. Default: ${BROWSER_WINDOW_PADDING.defaultPixels}.
   --no-browser-window       Export without the macOS-style browser frame.
   -h, --help                Show this help message.
 `;
@@ -60,6 +66,7 @@ async function main() {
         outputPath,
         scale: options.scale,
         browserWindow: options.browserWindow,
+        browserWindowPadding: options.browserWindowPadding,
         screenshotSize: options.screenshotSize
       });
 
@@ -77,6 +84,7 @@ async function main() {
 function parseArgs(args: string[]): CliOptions {
   const options: CliOptions = {
     browserWindow: true,
+    browserWindowPadding: BROWSER_WINDOW_PADDING.defaultPixels,
     force: false,
     help: false,
     inputs: [],
@@ -131,6 +139,12 @@ function parseArgs(args: string[]): CliOptions {
       continue;
     }
 
+    if (arg === '--window-padding') {
+      index += 1;
+      options.browserWindowPadding = parseWindowPadding(readOptionValue(args, index, arg));
+      continue;
+    }
+
     if (arg.startsWith('-')) {
       throw new CliError(`Unknown option: ${arg}`);
     }
@@ -175,6 +189,16 @@ function parseScreenshotSize(value: string) {
   }
 
   return size / 100;
+}
+
+function parseWindowPadding(value: string) {
+  const padding = Number(value);
+
+  if (!Number.isFinite(padding) || padding < 0) {
+    throw new CliError('--window-padding must be a non-negative number of pixels.');
+  }
+
+  return padding;
 }
 
 function resolveOutputPath(inputPath: string, explicitOutputPath: string | null) {
