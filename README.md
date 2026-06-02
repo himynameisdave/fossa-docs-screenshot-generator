@@ -80,7 +80,7 @@ bun run package:cli
 That command creates a `.tgz` package in the repo root. A teammate can install it globally and run the binary from any folder:
 
 ```sh
-npm install -g ./fossa-docs-screenshot-generator-0.1.0.tgz
+npm install -g ./fossa-docs-screenshot-generator-0.2.0.tgz
 fossa-docs-screenshot ./path/to/screenshot.png
 ```
 

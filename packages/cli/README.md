@@ -76,7 +76,7 @@ The package exposes the `fossa-docs-screenshot` binary and depends on `sharp` fo
 Install the generated tarball globally to use it like a normal command:
 
 ```sh
-npm install -g ./fossa-docs-screenshot-generator-0.1.0.tgz
+npm install -g ./fossa-docs-screenshot-generator-0.2.0.tgz
 fossa-docs-screenshot ./screenshot.png
 ```
 

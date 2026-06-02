@@ -1,6 +1,6 @@
 {
   "name": "@fossa/docs-screenshot-generator",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Generate FOSSA docs-ready screenshots from source images.",
   "type": "module",
   "bin": {
