@@ -52,8 +52,12 @@ jobs:
       - name: Pack CLI tarball
         id: pack
         run: |
+          set -o pipefail
           mkdir -p artifacts
-          tarball_name="$(npm pack ./packages/cli --pack-destination ./artifacts --silent)"
+          # The CLI's prepack script (bun build) writes its bundle summary to
+          # stdout, which --silent does not suppress. Take the final line so the
+          # captured value is just the tarball filename, not the build output.
+          tarball_name="$(npm pack ./packages/cli --pack-destination ./artifacts --silent | tail -n1)"
           tarball_path="artifacts/$tarball_name"
 
           if [ ! -f "$tarball_path" ]; then
